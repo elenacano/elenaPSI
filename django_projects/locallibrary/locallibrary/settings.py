@@ -25,14 +25,18 @@ load_dotenv(BASE_DIR / '.env')
 # SECURITY WARNING: keep the secret key used in production secret!
 # SECRET_KEY =
 # 'django-insecure-^n(gx(*3ji9^_g)zzey$+2zn*v3(@vh0k#g7usmj4wc&sayv_^'
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', default='your secret key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
-DEBUG = os.getenv('DEBUG', '0').lower() in ['true', 't', '1']
+DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(' ')
+# https://docs.djangoproject.com/en/3.0/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = []
 
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:    
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 
@@ -79,24 +83,33 @@ TEMPLATES = [
 WSGI_APPLICATION = 'locallibrary.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+# URL de neon
+DATABASE_URL='postgres://elenacano@ep-restless-snow-334848.eu-central-1.aws.neon.tech/neondb'
 
 DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL'), conn_max_age=600),
-}
-
+    'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)}
+    #LA url de neon
 
 # The following environment variable, called DATABASE_URL, has to be defined
 # at the o.s. level: export DATABASE_URL =
 # ’postgres://alumnodb:alumnodb@localhost:5432/psi’
 
 db_from_env = dj_database_url.config(
-    default='postgres://alumnodb:alumnodb@localhost:5432/psi',
+    default=DATABASE_URL,
     conn_max_age=500)
 DATABASES['default'].update(db_from_env)
 
+
+NEON_URL=DATABASE_URL
+POSTGRESQL_URL='postgres://alumnodb:alumnodb@localhost:5432/psi'
+
+if 'TESTING' in os.environ:
+    db_from_env = dj_database_url.config(default=POSTGRESQL_URL, conn_max_age=600)
+
+else:
+    db_from_env = dj_database_url.config(default=NEON_URL, conn_max_age=500)
+
+DATABASES['default'].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
